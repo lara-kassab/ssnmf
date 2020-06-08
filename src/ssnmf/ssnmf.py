@@ -243,14 +243,17 @@ class SSNMF:
                                     np.transpose(self.A) @ self.X + self.lam * np.transpose(self.B) \
                                     @ self.Y)
 
-            if saveerrs:
-                reconerrs[i] = la.norm(self.X - self.A @ self.S, 'fro')
-                classerrs[i] = la.norm(self.Y - self.B @ self.S, 'fro')
-                errs[i] = reconerrs[i]**2 + self.lam * classerrs[i]**2 #save errors
-                classaccs[i] = self.accuracy()
+                if saveerrs:
+                    reconerrs[i] = la.norm(self.X - self.A @ self.S, 'fro')
+                    classerrs[i] = la.norm(self.Y - self.B @ self.S, 'fro')
+                    errs[i] = reconerrs[i]**2 + self.lam * classerrs[i]**2 #save errors
+                    classaccs[i] = self.accuracy()
+
+            print("Completed SSNMF for supervised learning without missing data.")
 
             if saveerrs:
                 return [errs,reconerrs,classerrs,classaccs]
+
 
         elif self.L is not None and self.W is None:
             # semi-supervised learning, without missing data
@@ -270,8 +273,11 @@ class SSNMF:
                     errs[i] = reconerrs[i]**2 + self.lam * classerrs[i]**2 #save errors
                     classaccs[i] = self.accuracy()
 
-                if saveerrs:
-                    return [errs,reconerrs,classerrs,classaccs]
+            print("Completed SSNMF for semi-supervised learning without missing data.")
+
+            if saveerrs:
+                return [errs,reconerrs,classerrs,classaccs]
+
 
         elif self.L is None and self.W is not None:
             # supervised learning, with missing data
@@ -291,8 +297,10 @@ class SSNMF:
                     errs[i] = reconerrs[i]**2 + self.lam * classerrs[i]**2 #save errors
                     classaccs[i] = self.accuracy()
 
-                if saveerrs:
-                    return [errs,reconerrs,classerrs,classaccs]
+            print("Completed SSNMF for supervised learning with missing data.")
+
+            if saveerrs:
+                return [errs,reconerrs,classerrs,classaccs]
 
 
         elif self.W is not None and self.L is not None:
@@ -312,9 +320,12 @@ class SSNMF:
                     classerrs[i] = la.norm(np.multiply(self.L, self.Y) - np.multiply(self.L, self.B @ self.S), 'fro')
                     errs[i] = reconerrs[i]**2 + self.lam * classerrs[i]**2 #save errors
                     classaccs[i] = self.accuracy()
-                print("semisupervised learning, with missing data")
-                if saveerrs:
-                    return [errs,reconerrs,classerrs,classaccs]
+
+            print("Completed SSNMF for semi-supervised learning with missing data.")
+
+            if saveerrs:
+                return [errs,reconerrs,classerrs,classaccs]
+
 
 
     def klsnmfmult(self,**kwargs):

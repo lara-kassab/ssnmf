@@ -169,25 +169,44 @@ class SSNMF:
         errs : array, optional
             If saveerrs, returns array of ||X - AS||_F for each iteration (length numiters).
         '''
-        numiters = kwargs.get('numiters', 10)
+        numiters = kwargs.get('numiters', 1000)
         saveerrs = kwargs.get('saveerrs', False)
         eps = kwargs.get('eps', 1e-10)
 
         if saveerrs:
             errs = np.empty(numiters) #initialize error array
 
-        for i in range(numiters):
-            #multiplicative updates for A and S
-            self.A = np.multiply(np.divide(self.A,eps+ self.A @ self.S @ np.transpose(self.S)), \
+        if self.W is None:
+            for i in range(numiters):
+                #multiplicative updates for A and S
+                self.A = np.multiply(np.divide(self.A,eps+ self.A @ self.S @ np.transpose(self.S)), \
                                  self.X @ np.transpose(self.S))
-            self.S = np.multiply(np.divide(self.S,eps+ np.transpose(self.A) @ self.A @ self.S), \
+                self.S = np.multiply(np.divide(self.S,eps+ np.transpose(self.A) @ self.A @ self.S), \
                                  np.transpose(self.A) @ self.X)
 
-            if saveerrs:
-                errs[i] = la.norm(self.X - self.A @ self.S, 'fro') #save reconstruction error
+                if saveerrs:
+                    errs[i] = la.norm(self.X - self.A @ self.S, 'fro') #save reconstruction error
 
-        if saveerrs:
-            return [errs]
+            print("Completed NMF for unsupervised learning without missing data.")
+
+            if saveerrs:
+                return [errs]
+
+        elif self.W is not None:
+            for i in range(numiters):
+                #multiplicative updates for A and S
+                self.A = np.multiply(np.divide(self.A,eps+ np.multiply(self.W,self.A @ self.S) @ np.transpose(self.S)), \
+                                 np.multiply(self.W,self.X) @ np.transpose(self.S))
+                self.S = np.multiply(np.divide(self.S,eps+ np.transpose(self.A) @ np.multiply(self.W,self.A @ self.S)), \
+                                 np.transpose(self.A) @ np.multiply(self.W,self.X))
+
+                if saveerrs:
+                    errs[i] = la.norm(np.multiply(self.W,self.X) - np.multiply(self.W, self.A @ self.S), 'fro') #save reconstruction error
+
+            print("Completed NMF for unsupervised learning with missing data.")
+
+            if saveerrs:
+                return [errs]
 
     def snmfmult(self,**kwargs):
         '''
@@ -215,7 +234,7 @@ class SSNMF:
             If saveerrs, returns array of classification accuracy (computed with Y, B, S) at each
             iteration (length numiters).
         '''
-        numiters = kwargs.get('numiters', 10)
+        numiters = kwargs.get('numiters', 1000)
         saveerrs = kwargs.get('saveerrs', False)
         eps = kwargs.get('eps', 1e-10)
 
@@ -354,7 +373,7 @@ class SSNMF:
             If saveerrs, returns array of classification accuracy (computed with Y, B, S) at each
             iteration (length numiters).
         '''
-        numiters = kwargs.get('numiters', 10)
+        numiters = kwargs.get('numiters', 1000)
         saveerrs = kwargs.get('saveerrs', False)
         eps = kwargs.get('eps', 1e-10)
 

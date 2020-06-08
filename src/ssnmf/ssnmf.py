@@ -427,19 +427,35 @@ class SSNMF:
 
         numdata = np.shape(self.Y)[1]
 
-        #count number of data points which are correctly classified
-        numacc = 0
-        Yhat = self.B @ self.S
-        for i in range(numdata):
-            true_max = np.argmax(self.Y[:,i])
-            approx_max = np.argmax(Yhat[:,i])
+        if self.L is None:
+            #count number of data points which are correctly classified
+            numacc = 0
+            Yhat = self.B @ self.S
+            for i in range(numdata):
+                true_max = np.argmax(self.Y[:,i])
+                approx_max = np.argmax(Yhat[:,i])
 
-            if true_max == approx_max:
-                numacc = numacc + 1
+                if true_max == approx_max:
+                    numacc = numacc + 1
 
-        #return fraction of correctly classified data points
-        acc = numacc/numdata
-        return acc
+            #return fraction of correctly classified data points
+            acc = numacc/numdata
+            return acc
+
+        if self.L is not None:
+            #count number of data points which are correctly classified
+            numacc = 0
+            Yhat = np.multiply(self.L, self.B @ self.S)
+            for i in range(numdata):
+                true_max = np.argmax(np.multiply(self.L,self.Y)[:,i])
+                approx_max = np.argmax(Yhat[:,i])
+
+                if true_max == approx_max:
+                    numacc = numacc + 1
+
+            #return fraction of correctly classified data points
+            acc = numacc/numdata
+            return acc
 
     def kldiv(self,**kwargs):
         '''
@@ -469,6 +485,6 @@ class SSNMF:
 
 # TO-DO:
 # Add example of W and L for X with missing values and Y with missing labels.
-# Add missing data for mult (or merge with snmmult)
+# Merge mult with ssnmfmult when no Y is given
 # Fix accuracy function to accomodate missing labels
 # Add print statement for each NMF method

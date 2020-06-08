@@ -44,7 +44,7 @@ from numpy import linalg as la
 class SSNMF:
 
     """
-    Class for (S)NMF model.
+    Class for (SS)NMF model.
 
     The NMF model consists of the data matrix to be factorized, X, the factor matrices, A and
     S.  Each model also consists of a label matrix, Y, classification factor matrix, B, and
@@ -93,7 +93,7 @@ class SSNMF:
     accuracy()
         Compute the classification accuracy of semi-supervised model (using Y, B, and S).
     kldiv()
-        Compute the KL-divergence, D(Y||BS), of semi-upervised model (using Y, B, and S).
+        Compute the I-divergence, D(Y||BS), of semi-upervised model (using Y, B, and S).
 
     """
     def __init__(self, X, k, **kwargs):
@@ -135,21 +135,21 @@ class SSNMF:
 
         # missing data (optional)
         self.W = kwargs.get('W',None)
-            if self.W is not None:
-                #check dimensions of X and W match
-                if np.shape(self.W)[0] != np.shape(self.X)[0]:
-                    raise Exception('The row dimensions of X and W are not equal.')
-                if np.shape(self.W)[1] != np.shape(self.X)[1]:
-                    raise Exception('The column dimensions of X and W are not equal.')
+        if self.W is not None:
+            #check dimensions of X and W match
+            if np.shape(self.W)[0] != np.shape(self.X)[0]:
+                raise Exception('The row dimensions of X and W are not equal.')
+            if np.shape(self.W)[1] != np.shape(self.X)[1]:
+                raise Exception('The column dimensions of X and W are not equal.')
 
         # missing labels, semi-supervision (optional)
         self.L = kwargs.get('L',None)
-                if self.L is not None:
-                    #check dimensions of Y and L match
-                    if np.shape(self.L)[0] != np.shape(self.Y)[0]:
-                        raise Exception('The row dimensions of Y and L are not equal.')
-                    if np.shape(self.L)[1] != np.shape(self.Y)[1]:
-                        raise Exception('The column dimensions of Y and L are not equal.')
+        if self.L is not None:
+            #check dimensions of Y and L match
+            if np.shape(self.L)[0] != np.shape(self.Y)[0]:
+                raise Exception('The row dimensions of Y and L are not equal.')
+            if np.shape(self.L)[1] != np.shape(self.Y)[1]:
+                raise Exception('The column dimensions of Y and L are not equal.')
 
     def mult(self,**kwargs):
         '''
@@ -230,7 +230,7 @@ class SSNMF:
             #if no label matrix provided, train unsupervised model instead
             raise Exception('Label matrix Y not provided: train with mult instead.')
 
-        elif self.W is not None and self.L is not None:
+        elif self.L is None and self.W is None:
             # supervised learning, without missing data
             for i in range(numiters):
                 #multiplicative updates for A, S, and B
@@ -252,41 +252,41 @@ class SSNMF:
             if saveerrs:
                 return [errs,reconerrs,classerrs,classaccs]
 
-        elif self.W is None and self.L is not None:
+        elif self.L is not None and self.W is None:
             # semi-supervised learning, without missing data
             for i in range(numiters):
                 #multiplicative updates for A, S, and B
                 self.A = np.multiply(np.divide(self.A,eps+ self.A @ self.S @ np.transpose(self.S)), \
                                     self.X @ np.transpose(self.S))
-                self.B = np.multiply(np.divide(self.B, eps+ np.multiply(L,self.B @ self.S) @ np.transpose(self.S)), \
-                                    np.multiply(L,self.Y) @ np.transpose(self.S))
+                self.B = np.multiply(np.divide(self.B, eps+ np.multiply(self.L,self.B @ self.S) @ np.transpose(self.S)), \
+                                    np.multiply(self.L,self.Y) @ np.transpose(self.S))
                 self.S = np.multiply(np.divide(self.S, eps+ np.transpose(self.A) @ self.A @ self.S + \
-                                    self.lam * np.transpose(self.B) @ np.multiply(L,self.B @ self.S)), \
+                                    self.lam * np.transpose(self.B) @ np.multiply(self.L,self.B @ self.S)), \
                                     np.transpose(self.A) @ self.X + self.lam * np.transpose(self.B) \
-                                    @ np.multiply(L,self.Y))
+                                    @ np.multiply(self.L,self.Y))
                 if saveerrs:
                     reconerrs[i] = la.norm(self.X - self.A @ self.S, 'fro')
-                    classerrs[i] = la.norm(np.multiply(L,self.Y) - np.multiply(L,self.B @ self.S), 'fro')
+                    classerrs[i] = la.norm(np.multiply(self.L,self.Y) - np.multiply(self.L,self.B @ self.S), 'fro')
                     errs[i] = reconerrs[i]**2 + self.lam * classerrs[i]**2 #save errors
                     classaccs[i] = self.accuracy()
 
                 if saveerrs:
                     return [errs,reconerrs,classerrs,classaccs]
 
-        elif self.W is not None and self.L is None:
+        elif self.L is None and self.W is not None:
             # supervised learning, with missing data
             for i in range(numiters):
                 #multiplicative updates for A, S, and B
-                self.A = np.multiply(np.divide(self.A,eps+ np.multiply(W, self.A @ self.S) @ np.transpose(self.S)), \
-                                    np.multiply(W,self.X) @ np.transpose(self.S))
+                self.A = np.multiply(np.divide(self.A,eps+ np.multiply(self.W, self.A @ self.S) @ np.transpose(self.S)), \
+                                    np.multiply(self.W,self.X) @ np.transpose(self.S))
                 self.B = np.multiply(np.divide(self.B, eps+ self.B @ self.S @ np.transpose(self.S)), \
                                     self.Y @ np.transpose(self.S))
-                self.S = np.multiply(np.divide(self.S, eps+ np.transpose(self.A) @ np.multiply(W, self.A @ self.S) + \
+                self.S = np.multiply(np.divide(self.S, eps+ np.transpose(self.A) @ np.multiply(self.W, self.A @ self.S) + \
                                     self.lam * np.transpose(self.B) @ self.B @ self.S), \
-                                np.transpose(self.A) @ np.multiply(W, self.X) + self.lam * np.transpose(self.B) \
+                                np.transpose(self.A) @ np.multiply(self.W, self.X) + self.lam * np.transpose(self.B) \
                                 @ self.Y)
                 if saveerrs:
-                    reconerrs[i] = la.norm(np.multiply(W, self.X) - np.multiply(W, self.A @ self.S), 'fro')
+                    reconerrs[i] = la.norm(np.multiply(self.W, self.X) - np.multiply(self.W, self.A @ self.S), 'fro')
                     classerrs[i] = la.norm(self.Y - self.B @ self.S, 'fro')
                     errs[i] = reconerrs[i]**2 + self.lam * classerrs[i]**2 #save errors
                     classaccs[i] = self.accuracy()
@@ -299,20 +299,20 @@ class SSNMF:
             # semisupervised learning, with missing data
             for i in range(numiters):
                 #multiplicative updates for A, S, and B
-                self.A = np.multiply(np.divide(self.A,eps+ np.multiply(W, self.A @ self.S) @ np.transpose(self.S)), \
-                                    np.multiply(W,self.X) @ np.transpose(self.S))
-                self.B = np.multiply(np.divide(self.B, eps+ np.multiply(L, self.B @ self.S) @ np.transpose(self.S)), \
-                                    np.multiply(L, self.Y) @ np.transpose(self.S))
-                self.S = np.multiply(np.divide(self.S, eps+ np.transpose(self.A) @ np.multiply(W, self.A @ self.S) + \
-                                    self.lam * np.transpose(self.B) @ np.multiply(L,self.B @ self.S)), \
-                                np.transpose(self.A) @ np.multiply(W, self.X) + self.lam * np.transpose(self.B) \
-                                @ np.multiply(W, self.Y))
+                self.A = np.multiply(np.divide(self.A,eps+ np.multiply(self.W, self.A @ self.S) @ np.transpose(self.S)), \
+                                    np.multiply(self.W,self.X) @ np.transpose(self.S))
+                self.B = np.multiply(np.divide(self.B, eps+ np.multiply(self.L, self.B @ self.S) @ np.transpose(self.S)), \
+                                    np.multiply(self.L, self.Y) @ np.transpose(self.S))
+                self.S = np.multiply(np.divide(self.S, eps+ np.transpose(self.A) @ np.multiply(self.W, self.A @ self.S) + \
+                                    self.lam * np.transpose(self.B) @ np.multiply(self.L,self.B @ self.S)), \
+                                np.transpose(self.A) @ np.multiply(self.W, self.X) + self.lam * np.transpose(self.B) \
+                                @np.multiply(self.L, self.Y))
                 if saveerrs:
-                    reconerrs[i] = la.norm(np.multiply(W, self.X) - np.multiply(W, self.A @ self.S), 'fro')
-                    classerrs[i] = la.norm(self.Y - self.B @ self.S, 'fro')
+                    reconerrs[i] = la.norm(np.multiply(self.W, self.X) - np.multiply(self.W, self.A @ self.S), 'fro')
+                    classerrs[i] = la.norm(np.multiply(self.L, self.Y) - np.multiply(self.L, self.B @ self.S), 'fro')
                     errs[i] = reconerrs[i]**2 + self.lam * classerrs[i]**2 #save errors
                     classaccs[i] = self.accuracy()
-
+                print("semisupervised learning, with missing data")
                 if saveerrs:
                     return [errs,reconerrs,classerrs,classaccs]
 
@@ -413,7 +413,7 @@ class SSNMF:
 
     def kldiv(self,**kwargs):
         '''
-        Compute KL-divergence between Y and BS of semi-supervised model (most naturally (3)).
+        Compute I-divergence between Y and BS of semi-supervised model (most naturally (3)).
 
         Parameters
         ----------
@@ -423,7 +423,7 @@ class SSNMF:
         Returns
         -------
         kldiv : float_
-            KL-divergence between Y and BS.
+            I-divergence between Y and BS.
         '''
         eps = kwargs.get('eps', 1e-10)
 
@@ -437,7 +437,8 @@ class SSNMF:
         return kldiv
 
 
-# TO-DO for all methods: return A,S and B (optional if Y is not None)
+# TO-DO:
 # Add example of W and L for X with missing values and Y with missing labels.
 # Add missing data for mult (or merge with snmmult)
 # Fix accuracy function to accomodate missing labels
+# Add print statement for each NMF method

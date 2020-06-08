@@ -249,7 +249,7 @@ class SSNMF:
             #if no label matrix provided, train unsupervised model instead
             raise Exception('Label matrix Y not provided: train with mult instead.')
 
-        elif self.L is None and self.W is None:
+        if self.L is None and self.W is None:
             # supervised learning, without missing data
             for i in range(numiters):
                 #multiplicative updates for A, S, and B
@@ -477,14 +477,13 @@ class SSNMF:
             raise Exception('Label matrix Y not provided: model is not semi-supervised.')
 
         #compute divergence
-        Yhat = self.B @ self.S
-        div = np.multiply(self.Y, np.log(np.divide(self.Y+eps, Yhat+eps))) - self.Y + Yhat
+        Yhat = np.multiply(self.L,self.B @ self.S)
+        div = np.multiply(np.multiply(self.L, self.Y), np.log(np.divide(np.multiply(self.L, self.Y)+eps, Yhat+eps)))
+                - np.multiply(self.L,self.Y) + Yhat
         kldiv = np.sum(np.sum(div))
         return kldiv
 
 
 # TO-DO:
-# Add example of W and L for X with missing values and Y with missing labels.
-# Merge mult with ssnmfmult when no Y is given
-# Fix accuracy function to accomodate missing labels
+# Merge mult with ssnmfmult when no Y is given?
 # Add print statement for each NMF method

@@ -195,7 +195,7 @@ class SSNMF:
         elif self.W is not None:
             for i in range(numiters):
                 #multiplicative updates for A and S
-                self.A = np.multiply(np.divide(self.A,eps+ np.multiply(self.W,self.A @ self.S) @ np.transpose(self.S)), \
+                self.A = np.multiply(np.divide(self.A,eps+ np.multiply(self.W, self.A @ self.S) @ np.transpose(self.S)), \
                                  np.multiply(self.W,self.X) @ np.transpose(self.S))
                 self.S = np.multiply(np.divide(self.S,eps+ np.transpose(self.A) @ np.multiply(self.W,self.A @ self.S)), \
                                  np.transpose(self.A) @ np.multiply(self.W,self.X))
@@ -425,10 +425,9 @@ class SSNMF:
         if self.Y is None:
             raise Exception('Label matrix Y not provided: model is not semi-supervised.')
 
-        numdata = np.shape(self.Y)[1]
-
         if self.L is None:
             #count number of data points which are correctly classified
+            numdata = np.shape(self.Y)[1]
             numacc = 0
             Yhat = self.B @ self.S
             for i in range(numdata):
@@ -444,17 +443,23 @@ class SSNMF:
 
         if self.L is not None:
             #count number of data points which are correctly classified
+            numdata = np.shape(self.Y)[1]
+            num_labels = numdata
             numacc = 0
+
             Yhat = np.multiply(self.L, self.B @ self.S)
             for i in range(numdata):
                 true_max = np.argmax(np.multiply(self.L,self.Y)[:,i])
                 approx_max = np.argmax(Yhat[:,i])
 
-                if true_max == approx_max:
+                if (true_max == approx_max and np.multiply(self.L,self.Y)[true_max,i] != 0):
                     numacc = numacc + 1
 
+                if (true_max == approx_max and np.multiply(self.L,self.Y)[true_max,i] == 0):
+                    num_labels = num_labels - 1
+
             #return fraction of correctly classified data points
-            acc = numacc/numdata
+            acc = numacc/num_labels
             return acc
 
     def kldiv(self,**kwargs):
@@ -476,14 +481,26 @@ class SSNMF:
         if self.Y is None:
             raise Exception('Label matrix Y not provided: model is not semi-supervised.')
 
-        #compute divergence
-        Yhat = np.multiply(self.L,self.B @ self.S)
-        div = np.multiply(np.multiply(self.L, self.Y), np.log(np.divide(np.multiply(self.L, self.Y)+eps, Yhat+eps)))
-                - np.multiply(self.L,self.Y) + Yhat
-        kldiv = np.sum(np.sum(div))
-        return kldiv
+
+        if self.L is None:
+            #compute divergence
+            Yhat = self.B @ self.S
+            div = np.multiply(self.Y, np.log(np.divide(self.Y+eps, Yhat+eps))) - self.Y + Yhat
+            kldiv = np.sum(np.sum(div))
+            return kldiv
+
+
+        if self.L is not None:
+            #compute divergence when there is missing labels
+            Yhat = np.multiply(self.L,self.B @ self.S)
+            div = np.multiply(np.multiply(self.L, self.Y), np.log(np.divide(np.multiply(self.L, self.Y)+eps, Yhat+eps)))
+            -np.multiply(self.L,self.Y) + Yhat
+            kldiv = np.sum(np.sum(div))
+            return kldiv
 
 
 # TO-DO:
+# Review derivations for multiplicative updates for klsnmfmult when data/label is missing
+# Write multiplicative updates for klsnmfmult when data/label is missing
+# Write tests for div and accuracy functions
 # Merge mult with ssnmfmult when no Y is given?
-# Add print statement for each NMF method

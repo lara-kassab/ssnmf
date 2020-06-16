@@ -391,26 +391,102 @@ class SSNMF:
         classes = np.shape(self.Y)[0]
         cols = np.shape(self.Y)[1]
 
-        for i in range(numiters):
-            #multiplicative updates for A, S, and B
-            self.A = np.multiply(np.divide(self.A,eps+ self.A @ self.S @ np.transpose(self.S)), \
-                                 self.X @ np.transpose(self.S))
-            self.B = np.multiply(np.divide(self.B,eps+ np.ones((classes,cols)) @ np.transpose(self.S)), \
-                                 np.divide(self.Y, eps+ self.B @ self.S) @ np.transpose(self.S))
-            self.S = np.multiply(np.divide(self.S, eps+ 2 * np.transpose(self.A) @ self.A @ self.S + \
-                                           self.lam * np.transpose(self.B) @ \
-                                           np.ones((classes,cols))),2 * np.transpose(self.A) \
-                                 @ self.X + self.lam * np.transpose(self.B) @ \
-                                 np.divide(self.Y, eps+ self.B @ self.S))
+        if self.L is None and self.W is None:
+            for i in range(numiters):
+                #multiplicative updates for A, S, and B
+                self.A = np.multiply(np.divide(self.A,eps+ self.A @ self.S @ np.transpose(self.S)), \
+                                     self.X @ np.transpose(self.S))
+                self.B = np.multiply(np.divide(self.B,eps+ np.ones((classes,cols)) @ np.transpose(self.S)), \
+                                     np.divide(self.Y, eps+ self.B @ self.S) @ np.transpose(self.S))
+                self.S = np.multiply(np.divide(self.S, eps+ 2 * np.transpose(self.A) @ self.A @ self.S + \
+                                               self.lam * np.transpose(self.B) @ \
+                                               np.ones((classes,cols))),2 * np.transpose(self.A) \
+                                     @ self.X + self.lam * np.transpose(self.B) @ \
+                                     np.divide(self.Y, eps+ self.B @ self.S))
 
+                if saveerrs:
+                    reconerrs[i] = la.norm(self.X - self.A @ self.S, 'fro')
+                    classerrs[i] = self.kldiv()
+                    errs[i] = reconerrs[i]**2 + self.lam * classerrs[i] #save errors
+                    classaccs[i] = self.accuracy()
+
+            print("Completed I-SSNMF for supervised learning without missing data.")
             if saveerrs:
-                reconerrs[i] = la.norm(self.X - self.A @ self.S, 'fro')
-                classerrs[i] = self.kldiv()
-                errs[i] = reconerrs[i]**2 + self.lam * classerrs[i] #save errors
-                classaccs[i] = self.accuracy()
+                return [errs,reconerrs,classerrs,classaccs]
 
-        if saveerrs:
-            return [errs,reconerrs,classerrs,classaccs]
+
+        if self.L is None and self.W is not None:
+            for i in range(numiters):
+                #multiplicative updates for A, S, and B
+                self.A = np.multiply(np.divide(self.A,eps+ np.multiply(self.W, self.A @ self.S) @ np.transpose(self.S)), \
+                                     np.multiply(self.W, self.X) @ np.transpose(self.S))
+                self.B = np.multiply(np.divide(self.B,eps+ np.ones((classes,cols)) @ np.transpose(self.S)), \
+                                     np.divide(self.Y, eps+ self.B @ self.S) @ np.transpose(self.S))
+                self.S = np.multiply(np.divide(self.S, eps+ 2 * np.transpose(self.A) @ np.multiply(self.W, self.A @ self.S) + \
+                                               self.lam * np.transpose(self.B) @ \
+                                               np.ones((classes,cols))),2 * np.transpose(self.A) \
+                                     @ np.multiply(self.W, self.X) + self.lam * np.transpose(self.B) @ \
+                                     np.divide(self.Y, eps+ self.B @ self.S))
+
+                if saveerrs:
+                    reconerrs[i] = la.norm(np.multiply(self.W,self.X) - np.multiply(self.W,self.A @ self.S), 'fro')
+                    classerrs[i] = self.kldiv()
+                    errs[i] = reconerrs[i]**2 + self.lam * classerrs[i] #save errors
+                    classaccs[i] = self.accuracy()
+
+            print("Completed I-SSNMF for supervised learning with missing data.")
+            if saveerrs:
+                return [errs,reconerrs,classerrs,classaccs]
+
+
+
+        if self.L is not None and self.W is None:
+            for i in range(numiters):
+                #multiplicative updates for A, S, and B
+                self.A = np.multiply(np.divide(self.A,eps+ self.A @ self.S @ np.transpose(self.S)), \
+                                     self.X @ np.transpose(self.S))
+                self.B = np.multiply(np.divide(self.B,eps+ np.ones((classes,cols)) @ np.transpose(self.S)), \
+                                     np.divide(np.multiply(self.L, self.Y), eps+ np.multiply(self.L,self.B @ self.S)) @ np.transpose(self.S))
+                self.S = np.multiply(np.divide(self.S, eps+ 2 * np.transpose(self.A) @ self.A @ self.S + \
+                                               self.lam * np.transpose(self.B) @ \
+                                               np.ones((classes,cols))),2 * np.transpose(self.A) \
+                                     @ self.X + self.lam * np.transpose(self.B) @ \
+                                     np.divide(np.multiply(self.L,self.Y), eps+ np.multiply(self.L,self.B @ self.S)))
+
+                if saveerrs:
+                    reconerrs[i] = la.norm(self.X - self.A @ self.S, 'fro')
+                    classerrs[i] = self.kldiv()
+                    errs[i] = reconerrs[i]**2 + self.lam * classerrs[i] #save errors
+                    classaccs[i] = self.accuracy()
+
+            print("Completed I-SSNMF for semi-supervised learning without missing data.")
+            if saveerrs:
+                return [errs,reconerrs,classerrs,classaccs]
+
+
+        if self.L is not None and self.W is not None:
+            for i in range(numiters):
+                #multiplicative updates for A, S, and B
+                self.A = np.multiply(np.divide(self.A,eps+ np.multiply(self.W,self.A @ self.S) @ np.transpose(self.S)), \
+                                     np.multiply(self.W,self.X) @ np.transpose(self.S))
+                self.B = np.multiply(np.divide(self.B,eps+ np.ones((classes,cols)) @ np.transpose(self.S)), \
+                                     np.divide(np.multiply(self.L, self.Y), eps+ np.multiply(self.L,self.B @ self.S)) @ np.transpose(self.S))
+                self.S = np.multiply(np.divide(self.S, eps+ 2 * np.transpose(self.A) @ np.multiply(self.W, self.A @ self.S) + \
+                                               self.lam * np.transpose(self.B) @ \
+                                               np.ones((classes,cols))),2 * np.transpose(self.A) \
+                                     @ np.multiply(self.W,self.X) + self.lam * np.transpose(self.B) @ \
+                                     np.divide(np.multiply(self.L,self.Y), eps+ np.multiply(self.L,self.B @ self.S)))
+
+                if saveerrs:
+                    reconerrs[i] = la.norm(np.multiply(self.W,self.X) - np.multiply(self.W,self.A @ self.S), 'fro')
+                    classerrs[i] = self.kldiv()
+                    errs[i] = reconerrs[i]**2 + self.lam * classerrs[i] #save errors
+                    classaccs[i] = self.accuracy()
+
+            print("Completed I-SSNMF for semi-supervised learning with missing data.")
+            if saveerrs:
+                return [errs,reconerrs,classerrs,classaccs]
+
 
     def accuracy(self,**kwargs):
         '''
@@ -500,7 +576,5 @@ class SSNMF:
 
 
 # TO-DO:
-# Review derivations for multiplicative updates for klsnmfmult when data/label is missing
-# Write multiplicative updates for klsnmfmult when data/label is missing
 # Write tests for div and accuracy functions
 # Merge mult with ssnmfmult when no Y is given?

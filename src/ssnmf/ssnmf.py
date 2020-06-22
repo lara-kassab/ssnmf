@@ -346,7 +346,6 @@ class SSNMF:
                 return [errs,reconerrs,classerrs,classaccs]
 
 
-
     def klsnmfmult(self,**kwargs):
         '''
         Multiplicative updates for training semi-supervised NMF model (3).
@@ -398,9 +397,9 @@ class SSNMF:
                                      self.X @ np.transpose(self.S))
                 self.B = np.multiply(np.divide(self.B,eps+ np.ones((classes,cols)) @ np.transpose(self.S)), \
                                      np.divide(self.Y, eps+ self.B @ self.S) @ np.transpose(self.S))
-                self.S = np.multiply(np.divide(self.S, eps+ 2 * np.transpose(self.A) @ self.A @ self.S + \
+                self.S = np.multiply(np.divide(self.S, eps+ (2 * np.transpose(self.A) @ self.A @ self.S + \
                                                self.lam * np.transpose(self.B) @ \
-                                               np.ones((classes,cols))),2 * np.transpose(self.A) \
+                                               np.ones((classes,cols)))),2 * np.transpose(self.A) \
                                      @ self.X + self.lam * np.transpose(self.B) @ \
                                      np.divide(self.Y, eps+ self.B @ self.S))
 
@@ -422,9 +421,9 @@ class SSNMF:
                                      np.multiply(self.W, self.X) @ np.transpose(self.S))
                 self.B = np.multiply(np.divide(self.B,eps+ np.ones((classes,cols)) @ np.transpose(self.S)), \
                                      np.divide(self.Y, eps+ self.B @ self.S) @ np.transpose(self.S))
-                self.S = np.multiply(np.divide(self.S, eps+ 2 * np.transpose(self.A) @ np.multiply(self.W, self.A @ self.S) + \
+                self.S = np.multiply(np.divide(self.S, eps+ (2 * np.transpose(self.A) @ np.multiply(self.W, self.A @ self.S) + \
                                                self.lam * np.transpose(self.B) @ \
-                                               np.ones((classes,cols))),2 * np.transpose(self.A) \
+                                               np.ones((classes,cols)))),2 * np.transpose(self.A) \
                                      @ np.multiply(self.W, self.X) + self.lam * np.transpose(self.B) @ \
                                      np.divide(self.Y, eps+ self.B @ self.S))
 
@@ -447,9 +446,9 @@ class SSNMF:
                                      self.X @ np.transpose(self.S))
                 self.B = np.multiply(np.divide(self.B,eps+ np.ones((classes,cols)) @ np.transpose(self.S)), \
                                      np.divide(np.multiply(self.L, self.Y), eps+ np.multiply(self.L,self.B @ self.S)) @ np.transpose(self.S))
-                self.S = np.multiply(np.divide(self.S, eps+ 2 * np.transpose(self.A) @ self.A @ self.S + \
+                self.S = np.multiply(np.divide(self.S, eps+ (2 * np.transpose(self.A) @ self.A @ self.S + \
                                                self.lam * np.transpose(self.B) @ \
-                                               np.ones((classes,cols))),2 * np.transpose(self.A) \
+                                               np.ones((classes,cols)))),2 * np.transpose(self.A) \
                                      @ self.X + self.lam * np.transpose(self.B) @ \
                                      np.divide(np.multiply(self.L,self.Y), eps+ np.multiply(self.L,self.B @ self.S)))
 
@@ -471,9 +470,9 @@ class SSNMF:
                                      np.multiply(self.W,self.X) @ np.transpose(self.S))
                 self.B = np.multiply(np.divide(self.B,eps+ np.ones((classes,cols)) @ np.transpose(self.S)), \
                                      np.divide(np.multiply(self.L, self.Y), eps+ np.multiply(self.L,self.B @ self.S)) @ np.transpose(self.S))
-                self.S = np.multiply(np.divide(self.S, eps+ 2 * np.transpose(self.A) @ np.multiply(self.W, self.A @ self.S) + \
+                self.S = np.multiply(np.divide(self.S, eps+ (2 * np.transpose(self.A) @ np.multiply(self.W, self.A @ self.S) + \
                                                self.lam * np.transpose(self.B) @ \
-                                               np.ones((classes,cols))),2 * np.transpose(self.A) \
+                                               np.ones((classes,cols)))),2 * np.transpose(self.A) \
                                      @ np.multiply(self.W,self.X) + self.lam * np.transpose(self.B) @ \
                                      np.divide(np.multiply(self.L,self.Y), eps+ np.multiply(self.L,self.B @ self.S)))
 
@@ -569,12 +568,12 @@ class SSNMF:
         if self.L is not None:
             #compute divergence when there is missing labels
             Yhat = np.multiply(self.L,self.B @ self.S)
-            div = np.multiply(np.multiply(self.L, self.Y), np.log(np.divide(np.multiply(self.L, self.Y)+eps, Yhat+eps)))
-            -np.multiply(self.L,self.Y) + Yhat
+            div = np.multiply(np.multiply(self.L, self.Y), np.log(np.divide(np.multiply(self.L, self.Y)+eps, Yhat+eps))) \
+                -np.multiply(self.L,self.Y) + Yhat
             kldiv = np.sum(np.sum(div))
             return kldiv
 
 
 # TO-DO:
-# Write tests for div and accuracy functions
 # Merge mult with ssnmfmult when no Y is given?
+# User input format for I-SSNMF (L given/computed).

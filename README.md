@@ -22,7 +22,7 @@ you through the process.
 
 ## Usage
 
-First, import the `ssnmf` package and the relevant class `SSNMF`.  We import `numpy` and `scipy' for experimentation. 
+First, import the `ssnmf` package and the relevant class `SSNMF`.  We import `numpy` and `scipy` for experimentation. 
 
 ```python
 >>> import ssnmf
@@ -43,7 +43,7 @@ Declare an unsupervised NMF model with data matrix `X` and number of topics `k`.
 >>> model = SSNMF(X,k)
 ```
 
-You may access the factor matrices initialized in the model, e.g., to check relative reconstruction error ||X-AS||_F/||X||_F.
+You may access the factor matrices initialized in the model, e.g., to check relative reconstruction error `||X-AS||_F/||X||_F`.
 
 ```python
 >>> rel_error = np.linalg.norm(model.X - model.A @ model.S, 'fro')/np.linalg.norm(model.X,'fro')
@@ -82,7 +82,7 @@ Declare a supervised NMF model with data matrix `X`, number of topics `k`, label
 >>> model = SSNMF(X,k,Y = labelmat,lam=100*np.linalg.norm(X,'fro'))
 ```
 
-You may access the factor matrices initialized in the model, e.g., to check relative reconstruction error ||X-AS||_F/||X||_F and classification accuracy.
+You may access the factor matrices initialized in the model, e.g., to check relative reconstruction error `||X-AS||_F/||X||_F` and classification accuracy.
 
 ```python
 >>> rel_error = np.linalg.norm(model.X - model.A @ model.S, 'fro')/np.linalg.norm(model.X,'fro')
@@ -96,11 +96,11 @@ Run the multiplicative updates method for this supervised model for `N` iteratio
 >>> [errs,reconerrs,classerrs,classaccs] = model.snmfmult(numiters = N,saveerrs = True)
 ```
 
-This method updates the factor matrices N times.  You can see how much the relative reconstruction error and classification accuracy improves.
+This method updates the factor matrices `N` times.  You can see how much the relative reconstruction error and classification accuracy improves.
 
 ```python
->>> rel_error = reconerrs[99]/np.linalg.norm(X,'fro')
->>> acc = classaccs[99]
+>>> rel_error = reconerrs[-1]/np.linalg.norm(X,'fro')
+>>> acc = classaccs[-1]
 ```
 
 #### Training a supervised model with KL-divergence
@@ -141,9 +141,9 @@ Run the multiplicative updates method for this supervised model for `N` iteratio
 This method updates the factor matrices N times.  You can see how much the relative reconstruction error and classification accuracy improves.
 
 ```python
->>> rel_error = reconerrs[99]/np.linalg.norm(X,'fro')
->>> acc = classaccs[99]
->>> div = classerrs[99]
+>>> rel_error = reconerrs[-1]/np.linalg.norm(X,'fro')
+>>> acc = classaccs[-1]
+>>> div = classerrs[-1]
 ```
 
 

@@ -103,7 +103,7 @@ This method updates the factor matrices `N` times.  You can see how much the rel
 >>> acc = classaccs[-1]
 ```
 
-#### Training a supervised model with KL-divergence
+#### Training a supervised model with I-divergence
 
 We begin by generating some synthetic data for testing.
 ```python
@@ -123,7 +123,7 @@ Declare a supervised NMF model with data matrix `X`, number of topics `k`, label
 >>> model = SSNMF(X,k,Y = labelmat,lam=100*np.linalg.norm(X,'fro'))
 ```
 
-You may access the factor matrices initialized in the model, e.g., to check relative reconstruction error `||X-AS||_F/||X||_F`, classification accuracy, and KL-divergence improves.
+You may access the factor matrices initialized in the model, e.g., to check relative reconstruction error `||X-AS||_F/||X||_F`, classification accuracy, and I-divergence improves.
 
 ```python
 >>> rel_error = np.linalg.norm(model.X - model.A @ model.S, 'fro')/np.linalg.norm(model.X,'fro')
@@ -146,6 +146,68 @@ This method updates the factor matrices `N` times.  You can see how much the rel
 >>> div = classerrs[-1]
 ```
 
+#### Training a semi-supervised model with missing data using I
+-divergence
+We begin by generating some synthetic data for testing.
+```python
+>>> labelmat = np.concatenate((np.concatenate((np.ones([1,10]),np.zeros([1,30])),axis=1),np.concatenate((np.zeros([1,10]),np.ones([1,10]),np.zeros([1,20])),axis=1),np.concatenate((np.zeros([1,20]),np.ones([1,10]),np.zeros([1,10])),axis=1),np.concatenate((np.zeros([1,30]),np.ones([1,10])),axis=1)))
+>>> B = sparse.random(4,10,density=0.2).toarray()
+>>> S = np.zeros([10,40])
+>>> for i in range(40):
+...     S[:,i] = scipy.optimize.nnls(B,labelmat[:,i])[0]
+>>> A = np.random.rand(40,10)
+>>> X = A @ S
+```
+
+We randomly mask 5% of the data matrix X.
+```python
+>>> p = 0.05
+>>> ix = [random.randint(0,X.shape[0]-1) for i in range(int(p*X.size))]
+>>> jx = [random.randint(0,X.shape[1]-1) for i in range(int(p*X.size))]
+>>> X[ix,jx] = np.nan
+```
+
+Compute the mask matrix W for the missing data in X
+```python
+>>> ind_X = np.argwhere(np.isnan(X))
+>>> W = np.ones((X.shape))
+>>> W[ind_X[:,0].tolist(),ind_X[:,1].tolist()] = 0
+>>> X[np.isnan(X)] = 0
+```
+
+Randomly mask 10% of the the labels
+```python
+>>> p = 0.1
+>>> j_col = [random.randint(0,Y.shape[1]-1) for i in range(int(p*Y.size))]
+>>> Y[:,j_col] = np.nan
+```
+
+Compute the mask matrix L for the missing data in Y
+```python
+>>> ind_Y = np.argwhere(np.isnan(Y))
+>>> L = np.ones((Y.shape))
+>>> L[:,np.unique(ind_Y[:,1]).tolist()] = 0
+>>> Y[np.isnan(Y)] = 0
+```
+
+Define SSNMF model with rank = k
+```python
+>>> k = 10
+>>> model = SSNMF(X,k,Y = Y,lam=np.linalg.norm(X,'fro'), W=W, L=L)
+```
+
+Run the multiplicative updates method for the semi-supervised model for `N` iterations.
+```python
+>>> N = 100
+>>> [errs,reconerrs,classerrs,classaccs] = model.klsnmfmult(numiters = N,saveerrs = True)
+```
+
+Compute various errors.
+```python
+>>> rel_error = reconerrs[-1]/np.linalg.norm(X,'fro')
+>>> acc = classaccs[-1]
+>>> div = classerrs[-1]
+```
 
 ## Citing
 If you use our code in an academic setting, please consider citing our code.

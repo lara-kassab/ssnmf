@@ -20,21 +20,38 @@
     >>> model = SSNMF(numpy.random.rand(100,100),10)
     >>> errs = model.mult(saveerrs = True,numiters = numIters)
 
-    unsupervised (1), not saving errors, declaring number of iterations
+    unsupervised (1) with missing data, not saving errors, declaring number of iterations
 
     >>> numIters = 100
-    >>> model = SSNMF(numpy.random.rand(100,100),10)
+    >>> model = SSNMF(numpy.random.rand(100,100),10, W = data['obsdata'])
     >>> model.mult(numiters = numIters)
 
-    semi-supervised (2), saving errors, default number of iterations
+    supervised (2), saving errors, default number of iterations
 
     >>> model = SSNMF(data['datamat'], 10, Y = data['labelmat'])
     >>> errs = model.snmfmult(saveerrs = True)
 
-    semi-supervised (3), not saving errors, declaring number of iterations
+    semi-supervised (2), saving errors, default number of iterations
+
+    >>> model = SSNMF(data['datamat'], 10, Y = data['labelmat'], L = data['obslabels'])
+    >>> errs = model.snmfmult(saveerrs = True)
+
+    supervised (3), not saving errors, declaring number of iterations
 
     >>> numIters = 15
     >>> model = SSNMF(data['datamat'], 10, Y = data['labelmat'])
+    >>> model.klsnmfmult(numiters = numIters)
+
+    semi-supervised (3), not saving errors, declaring number of iterations and regularization parameter lam
+
+    >>> numIters = 15
+    >>> model = SSNMF(data['datamat'], 10, lam = 0.1, Y = data['labelmat'], L = data['obslabels'])
+    >>> model.klsnmfmult(numiters = numIters)
+
+    semi-supervised (3) with missing data, not saving errors, declaring number of iterations
+
+    >>> numIters = 15
+    >>> model = SSNMF(data['datamat'], 10, Y = data['labelmat'], W = data['obsdata'], L = data['obslabels'])
     >>> model.klsnmfmult(numiters = numIters)
 '''
 
@@ -87,9 +104,9 @@ class SSNMF:
     mult(numiters = 10, saveerrs = True)
         Train the unsupervised model (1) via numiters multiplicative updates.
     snmfmult(numiters = 10, saveerrs = True)
-        Train the semi-supervised model (2) via numiters multiplicative updates.
+        Train the (semi-)supervised model (2) via numiters multiplicative updates.
     klsnmfmult(numiters = 10, saveerrs = True)
-        Train the semi-supervised model (3) via numiters multiplicative updates.
+        Train the (semi-)supervised model (3) via numiters multiplicative updates.
     accuracy()
         Compute the classification accuracy of semi-supervised model (using Y, B, and S).
     kldiv()
@@ -109,9 +126,9 @@ class SSNMF:
         if cols != np.shape(self.S)[1]:
             raise Exception('The column dimensions of X and S are not equal.')
         if np.shape(self.A)[1] != k:
-            raise Exception('The column dimension of A is not k.')
+            raise Exception('The column dimension of A is not equal to the input number of topics.')
         if np.shape(self.S)[0] != k:
-            raise Exception('The row dimension of S is not k.')
+            raise Exception('The row dimension of S is not equal to the input number of topics.')
 
         #supervision initializations (optional)
         self.Y = kwargs.get('Y',None)
@@ -128,7 +145,7 @@ class SSNMF:
             if np.shape(self.B)[0] != classes:
                 raise Exception('The row dimensions of Y and B are not equal.')
             if np.shape(self.B)[1] != k:
-                raise Exception('The column dimension of B is not k.')
+                raise Exception('The column dimension of B is not equal to the input number of topics.')
         else:
             self.B = None
             self.lam = None
@@ -572,10 +589,3 @@ class SSNMF:
                 -np.multiply(self.L,self.Y) + Yhat
             kldiv = np.sum(np.sum(div))
             return kldiv
-
-
-# TO-DO:
-# User input format for I-SSNMF (L given/computed).
-# Modify GitHub instructions.
-# Add automatic tests.
-# Relative errors?

@@ -177,22 +177,22 @@ Compute the mask matrix W for the missing data in X
 Randomly mask 10% of the the labels
 ```python
 >>> p = 0.1
->>> j_col = [random.randint(0,Y.shape[1]-1) for i in range(int(p*Y.size))]
->>> Y[:,j_col] = np.nan
+>>> j_col = [random.randint(0,labelmat.shape[1]-1) for i in range(int(p*labelmat.size))]
+>>> labelmat[:,j_col] = np.nan
 ```
 
 Compute the mask matrix L for the missing data in Y
 ```python
->>> ind_Y = np.argwhere(np.isnan(Y))
->>> L = np.ones((Y.shape))
+>>> ind_Y = np.argwhere(np.isnan(labelmat))
+>>> L = np.ones((labelmat.shape))
 >>> L[:,np.unique(ind_Y[:,1]).tolist()] = 0
->>> Y[np.isnan(Y)] = 0
+>>> labelmat[np.isnan(labelmat)] = 0
 ```
 
 Define SSNMF model with rank = k
 ```python
 >>> k = 10
->>> model = SSNMF(X,k,Y = Y,lam=np.linalg.norm(X,'fro'), W=W, L=L)
+>>> model = SSNMF(X,k,Y = labelmat,lam=np.linalg.norm(X,'fro'), W=W, L=L)
 ```
 
 Run the multiplicative updates method for the semi-supervised model for `N` iterations.

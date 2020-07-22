@@ -146,8 +146,7 @@ This method updates the factor matrices `N` times.  You can see how much the rel
 >>> div = classerrs[-1]
 ```
 
-#### Training a semi-supervised model with missing data using I
--divergence
+#### Training a semi-supervised model with missing data using I-divergence
 We begin by generating some synthetic data for testing.
 ```python
 >>> labelmat = np.concatenate((np.concatenate((np.ones([1,10]),np.zeros([1,30])),axis=1),np.concatenate((np.zeros([1,10]),np.ones([1,10]),np.zeros([1,20])),axis=1),np.concatenate((np.zeros([1,20]),np.ones([1,10]),np.zeros([1,10])),axis=1),np.concatenate((np.zeros([1,30]),np.ones([1,10])),axis=1)))
